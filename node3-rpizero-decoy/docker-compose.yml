@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  # ── 1. OPENCANARY HONEYPOT (Trampa de red virtual en Macvlan IP 192.168.1.50) ──
+  opencanary:
+    image: mcnamee/opencanary:latest
+    container_name: opencanary
+    entrypoint:
+      - sh
+      - -c
+      - |
+        rm -f /twistd.pid /opencanary/twistd.pid /root/twistd.pid
+        exec opencanaryd --dev --allow-run-as-root
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - NET_BIND_SERVICE
+    networks:
+      macvlan_decoy:
+        ipv4_address: 192.168.1.50
+    volumes:
+      - ./opencanary/opencanary.conf:/root/.opencanary.conf:ro
+      - ./opencanary/opencanary.conf:/etc/opencanaryd/opencanary.conf:ro
+      - /var/log/opencanary:/var/log/opencanary
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+networks:
+  macvlan_decoy:
+    name: macvlan_decoy
+    driver: macvlan
+    driver_opts:
+      parent: eth0
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
+          ip_range: 192.168.1.50/32

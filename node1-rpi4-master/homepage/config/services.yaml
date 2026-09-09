@@ -1,0 +1,52 @@
+- DNS & Privacidad (Alta Disponibilidad):
+    - AdGuard Home (Master RPi 4):
+        icon: adguard-home.png
+        href: "http://192.168.1.40:8085"
+        description: "DNS Sinkhole Primario con DoH/DoT"
+        widget:
+          type: adguard
+          url: "http://192.168.1.40:8085"
+          username: admin
+          password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
+
+    - AdGuard Home (Slave RPi 3):
+        icon: adguard-home.png
+        href: "http://192.168.1.39:8085"
+        description: "DNS Secundario en Alta Disponibilidad"
+        widget:
+          type: adguard
+          url: "http://192.168.1.39:8085"
+          username: admin
+          password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
+
+- Ciberdefensa & Amenazas:
+    - CrowdSec Central (LAPI):
+        icon: crowdsec.png
+        href: "https://app.crowdsec.net"
+        description: "IPS con Inteligencia de Amenazas Global"
+        widget:
+          type: crowdsec
+          url: "http://192.168.1.40:8080"
+          username: "homepage"
+          password: "{{HOMEPAGE_VAR_CROWDSEC_PASS}}"
+
+    - OpenCanary (Honeypot RPi Zero):
+        icon: si-honeypot
+        href: "http://192.168.1.50"
+        description: "Señuelo LAN con Alertas a Telegram (SSH, SMB, Web)"
+        status: "ARMADO"
+
+- Acceso Remoto & Vigilancia:
+    - WireGuard (wg-easy):
+        icon: wireguard.png
+        href: "http://192.168.1.40:51821"
+        description: "VPN Cifrada con Códigos QR"
+
+    - Uptime Kuma:
+        icon: uptime-kuma.png
+        href: "http://192.168.1.40:3001"
+        description: "Monitor de Latencias y Alertas Telegram"
+        widget:
+          type: uptimekuma
+          url: "http://192.168.1.40:3001"
+          slug: default

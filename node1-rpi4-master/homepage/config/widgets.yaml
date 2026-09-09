@@ -1,0 +1,16 @@
+- greeting:
+    text: "SOC COMMAND CENTER"
+    section: "Infraestructura & Hardware"
+
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+    label: "RPi 4 Master"
+
+- datetime:
+    text_size: "xl"
+    format:
+      timeStyle: "medium"
+      dateStyle: "medium"
+      hourCycle: "h23"

@@ -1,0 +1,174 @@
+version: "3.8"
+
+networks:
+  soc_net:
+    name: soc_net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+services:
+  # ── 1. UNBOUND RESOLVER (Raíz DNSSEC en localhost:5335) ──
+  unbound-primary:
+    image: klutchell/unbound:latest
+    container_name: unbound-primary
+    restart: unless-stopped
+    networks:
+      soc_net:
+        ipv4_address: 172.28.0.2
+    ports:
+      - "5335:5335/udp"
+      - "5335:5335/tcp"
+    volumes:
+      - ./unbound/unbound.conf:/etc/unbound/unbound.conf:ro
+    environment:
+      - TZ=Europe/Madrid
+    command: ["-d"]
+    deploy:
+      resources:
+        limits:
+          memory: 48M
+
+  # ── 2. ADGUARD HOME (DNS Sinkhole Primario en :53) ──
+  adguard-primary:
+    image: adguard/adguardhome:latest
+    container_name: adguard-primary
+    restart: unless-stopped
+    depends_on:
+      - unbound-primary
+    networks:
+      soc_net:
+        ipv4_address: 172.28.0.3
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "3000:3000/tcp"  # Wizard inicial
+      - "8085:80/tcp"     # Web GUI
+    volumes:
+      - ./adguard/work:/opt/adguardhome/work
+      - ./adguard/conf:/opt/adguardhome/conf
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  # ── 3. ADGUARD SYNC (Replicación automática a Node 2 RPi 3) ──
+  adguard-sync:
+    image: ghcr.io/bakito/adguardhome-sync:latest
+    container_name: adguard-sync
+    restart: unless-stopped
+    depends_on:
+      - adguard-primary
+    environment:
+      - ORIGIN_URL=http://172.28.0.3:80
+      - ORIGIN_USERNAME=${ADGUARD_USER:-admin}
+      - ORIGIN_PASSWORD=${ADGUARD_PASS:-AdminPassword123!}
+      - REPLICA1_URL=http://${NODE2_IP:-192.168.1.3}:8085
+      - REPLICA1_USERNAME=${ADGUARD_USER:-admin}
+      - REPLICA1_PASSWORD=${ADGUARD_PASS:-AdminPassword123!}
+      - CRON=*/10 * * * *
+    command:
+      - run
+      - --feature-dns-server-config=false
+      - --feature-filters-blacklist=false
+      - --feature-filters-whitelist=false
+      - --feature-filters-user-rules=false
+    networks:
+      soc_net:
+        ipv4_address: 172.28.0.4
+    deploy:
+      resources:
+        limits:
+          memory: 48M
+
+  # ── 4. WIREGUARD VPN (wg-easy con Web UI y QR) ──
+  wg-easy:
+    image: ghcr.io/wg-easy/wg-easy:latest
+    container_name: wg-easy
+    restart: unless-stopped
+    environment:
+      - WG_HOST=${DDNS_DOMAIN:-mi-servidor.duckdns.org}
+      - PASSWORD_HASH=${WG_ADMIN_HASH:-$$2a$$12$$yourBcryptHashHere}
+      - WG_DEFAULT_DNS=${NODE1_IP:-192.168.1.2}
+      - WG_ALLOWED_IPS=192.168.1.0/24, 10.8.0.0/24
+    volumes:
+      - ./wireguard:/etc/wireguard
+      - /lib/modules:/lib/modules:ro
+    entrypoint:
+      - sh
+      - -c
+      - |
+        ln -sf /usr/sbin/iptables-nft /usr/sbin/iptables
+        ln -sf /usr/sbin/iptables-nft-restore /usr/sbin/iptables-restore
+        ln -sf /usr/sbin/iptables-nft-save /usr/sbin/iptables-save
+        exec docker-entrypoint.sh /usr/bin/dumb-init node server.js
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821/tcp" # Panel de administración Web
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv4.ip_forward=1
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # ── 5. CROWDSEC LAPI (Servidor Central de Decisiones e IPS) ──
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: crowdsec
+    restart: unless-stopped
+    environment:
+      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/whitelist-good-actors LePresidente/adguardhome
+      - GID=1000
+    volumes:
+      - ./crowdsec/config:/etc/crowdsec
+      - ./crowdsec/data:/var/lib/crowdsec/data
+      - /var/log:/var/log:ro
+      - ./adguard/work:/var/log/adguard:ro
+    ports:
+      - "8080:8080" # CrowdSec Local API (LAPI)
+    networks:
+      soc_net:
+        ipv4_address: 172.28.0.10
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+
+  # ── 6. UPTIME KUMA (Monitor de Latencias y Alertas Telegram) ──
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - ./uptime-kuma:/app/data
+    ports:
+      - "3001:3001"
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+
+  # ── 7. HOMEPAGE DASHBOARD (Cuadro de Mando del Home SOC) ──
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.40:8082,192.168.1.40,localhost:8082,localhost
+      - HOMEPAGE_VAR_ADGUARD_PASS=${ADGUARD_PASS:-AdminSecurePassword2026!}
+      - HOMEPAGE_VAR_CROWDSEC_PASS=${CROWDSEC_HOMEPAGE_PASS:-AdminSecurePassword2026!}
+    volumes:
+      - ./homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8082:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 64M

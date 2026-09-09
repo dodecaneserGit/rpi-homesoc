@@ -1,0 +1,19 @@
+# Variables de entorno y credenciales locales
+.env
+*.local
+*.secret
+
+# Datos persistentes generados por contenedores
+adguard/work/
+wireguard/
+crowdsec/data/
+uptime-kuma/
+*.log
+
+# Archivos del sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.bak

@@ -1,0 +1,21 @@
+title: "HOME SOC // COMMAND CENTER"
+background:
+  image: ""
+  blur: "sm"
+  brightness: 50
+  opacity: 50
+theme: dark
+color: emerald
+layout:
+  Infraestructura & Hardware:
+    style: row
+    columns: 2
+  DNS & Privacidad (Alta Disponibilidad):
+    style: row
+    columns: 2
+  Ciberdefensa & Amenazas:
+    style: row
+    columns: 2
+  Acceso Remoto & Vigilancia:
+    style: row
+    columns: 2
