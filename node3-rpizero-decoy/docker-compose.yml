@@ -21,6 +21,7 @@ services:
     volumes:
       - ./opencanary/opencanary.conf:/root/.opencanary.conf:ro
       - ./opencanary/opencanary.conf:/etc/opencanaryd/opencanary.conf:ro
+      - ./opencanary/logger.py:/opencanary/opencanary/logger.py:ro
       - /var/log/opencanary:/var/log/opencanary
     deploy:
       resources:
