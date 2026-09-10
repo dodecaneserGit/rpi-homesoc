@@ -36,10 +36,16 @@ ADGUARD_PASS=TuPasswordSeguraAqui!
 ```env
 DDNS_DOMAIN=mi-servidor.duckdns.org
 WG_ADMIN_HASH=$$2a$$12$$e8Y6e3fGZqW7Q...
+WG_MTU=1280
+WG_ALLOWED_IPS=0.0.0.0/0, ::/0
 ```
 
 * **¿Para qué sirve?**
-  * Es la contraseña para acceder a la interfaz web de gestión de WireGuard (`http://192.168.1.2:51821`), donde se dan de alta clientes y se descargan los perfiles VPN o códigos QR.
+  * `DDNS_DOMAIN`: Es la dirección a la que se conectarán tus dispositivos (móviles, portátiles) cuando estés fuera de casa. **Debe ser un dominio DDNS público** (ej. DuckDNS gratuito) o tu IP pública. **NUNCA uses una IP local (192.168.1.x)** aquí; de lo contrario tus clientes no podrán conectarse desde datos móviles (4G/5G) ni redes externas.
+  * **Puerto en el router**: Es obligatorio abrir/redireccionar el puerto **51820 UDP** en tu router apuntando a la IP del Nodo 1 (ej: `192.168.1.40:51820`).
+  * `WG_MTU=1280`: Establece el MTU a 1280 bytes para evitar la fragmentación de paquetes y el bloqueo en redes 4G/5G y fibra PPPoE (evita que la VPN vaya lenta o dé errores de timeout).
+  * `WG_ALLOWED_IPS`: `0.0.0.0/0, ::/0` para enrutar todo el tráfico por la VPN (protegido por AdGuard Home) o `192.168.1.0/24, 10.8.0.0/24` si solo quieres acceder a equipos locales.
+  * `WG_ADMIN_HASH`: Es la contraseña para acceder a la interfaz web de gestión de WireGuard (`http://192.168.1.40:51821`), donde se dan de alta clientes y se descargan los perfiles VPN o códigos QR.
 * **¿Cómo generar el hash bcrypt?**
   * `wg-easy` **no** acepta contraseñas en texto plano por seguridad; requiere un hash bcrypt.
   * Ejecuta el siguiente comando en cualquier terminal con Docker (sustituye `'MiPasswordVPN'` por la contraseña que quieras):

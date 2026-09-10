@@ -92,10 +92,12 @@ fi
 echo "[+] 2. Aplicando endurecimiento de parámetros de red y kernel..."
 
 cat > /etc/sysctl.d/99-soc-hardening.conf << 'SYSCTLCONF'
-# === [ HOME SOC ] Parámetros de Red y Seguridad de Kernel ===
-# Protección anti-spoofing (Reverse Path Filtering estricto)
-net.ipv4.conf.all.rp_filter = 1
-net.ipv4.conf.default.rp_filter = 1
+# Habilitar reenvío de paquetes IP para WireGuard y redes Docker
+net.ipv4.ip_forward = 1
+
+# Protección anti-spoofing (Reverse Path Filtering en modo loose=2 para compatibilidad con WireGuard y Docker)
+net.ipv4.conf.all.rp_filter = 2
+net.ipv4.conf.default.rp_filter = 2
 
 # Protección contra ataques SYN Flood
 net.ipv4.tcp_syncookies = 1

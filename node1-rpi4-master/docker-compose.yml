@@ -91,7 +91,9 @@ services:
       - WG_HOST=${DDNS_DOMAIN:-mi-servidor.duckdns.org}
       - PASSWORD_HASH=${WG_ADMIN_HASH:-$$2a$$12$$yourBcryptHashHere}
       - WG_DEFAULT_DNS=${NODE1_IP:-192.168.1.2}
-      - WG_ALLOWED_IPS=192.168.1.0/24, 10.8.0.0/24
+      - WG_ALLOWED_IPS=${WG_ALLOWED_IPS:-0.0.0.0/0, ::/0}
+      - WG_MTU=${WG_MTU:-1280}
+      - WG_PERSISTENT_KEEPALIVE=${WG_PERSISTENT_KEEPALIVE:-25}
     volumes:
       - ./wireguard:/etc/wireguard
       - /lib/modules:/lib/modules:ro
