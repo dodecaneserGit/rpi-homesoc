@@ -154,7 +154,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 96M
+          memory: 192M
 
   # ── 7. HOMEPAGE DASHBOARD (Cuadro de Mando del Home SOC) ──
   homepage:
@@ -173,4 +173,4 @@ services:
     deploy:
       resources:
         limits:
-          memory: 64M
+          memory: 128M
